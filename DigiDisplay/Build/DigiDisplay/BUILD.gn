@@ -1,0 +1,36 @@
+import("$tizen_core/build/web/project.gni")
+
+web_project("DigiDisplay") {
+  files = [
+      "//.project",
+      "//.tproject",
+      "//DigiDisplay.csproj",
+      "//Directory.Build.targets",
+      "//config.xml",
+      "//css\style.css",
+      "//icon.png",
+      "//images\tizen_32.png",
+      "//index.html",
+      "//js\main.js",
+      "//obj\Debug\net6.0-tizen9.0\DigiDisplay.AssemblyInfo.cs",
+      "//obj\Debug\net6.0-tizen9.0\DigiDisplay.AssemblyInfoInputs.cache",
+      "//obj\Debug\net6.0-tizen9.0\DigiDisplay.GeneratedMSBuildEditorConfig.editorconfig",
+      "//obj\Debug\net6.0-tizen9.0\DigiDisplay.assets.cache",
+      "//obj\DigiDisplay.csproj.nuget.dgspec.json",
+      "//obj\DigiDisplay.csproj.nuget.g.props",
+      "//obj\DigiDisplay.csproj.nuget.g.targets",
+      "//obj\project.assets.json",
+      "//obj\project.nuget.cache",
+      "//tizen_web_project.yaml",
+  ]
+
+if (opt) {
+  opt_files = [
+  ]
+}
+  
+  deps = [
+  ]
+
+  project_path = "c:/Users/saswa/OneDrive/Desktop/DigiDisplay/DigiDisplay"
+}

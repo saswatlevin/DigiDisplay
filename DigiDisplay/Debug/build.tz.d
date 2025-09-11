@@ -1,0 +1,1 @@
+build.tz: ../tizen_web_project.yaml

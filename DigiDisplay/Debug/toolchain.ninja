@@ -1,0 +1,27 @@
+rule stamp
+  command = c:/Users/saswa/.vscode/extensions/tizen.vscode-tizen-sdk/tools/tizen-core/uutils touch ${out}
+  description = STAMP ${out}
+rule copy
+  command = cmd /c " (c:/Users/saswa/.vscode/extensions/tizen.vscode-tizen-sdk/tools/tizen-core/uutils rm -rf ${out} && c:/Users/saswa/.vscode/extensions/tizen.vscode-tizen-sdk/tools/tizen-core/uutils cp ${in} ${out}) "
+  description = COPY ${out}
+
+build obj/Build/build.stamp: stamp obj/DigiDisplay/all.stamp
+build obj/Build/hash.stamp: stamp obj/DigiDisplay/hash.stamp
+rule __Build_pack__c__Users_saswa_.vscode_extensions_tizen.vscode-tizen-sdk_tools_tizen-core_dotnet_toolchains_dotnet_builder__rule
+  command = c:/Users/saswa/.vscode/extensions/tizen.vscode-tizen-sdk/tools/tizen-core/tz sign-pack web -W . --out DigiDisplay.wgt -h -b c$:/Users/saswa/OneDrive/Desktop/DigiDisplay/DigiDisplay/Build -D -m DigiDisplay
+  description = SIGN package files
+  restat = 1
+
+build .wgt/author-signature.xml .wgt/signature1.xml DigiDisplay.wgt: __Build_pack__c__Users_saswa_.vscode_extensions_tizen.vscode-tizen-sdk_tools_tizen-core_dotnet_toolchains_dotnet_builder__rule | ../config.xml obj/DigiDisplay/hash.stamp
+
+build obj/Build/pack.stamp: stamp .wgt/author-signature.xml .wgt/signature1.xml DigiDisplay.wgt
+rule __DigiDisplay_DigiDisplay.build_web__c__Users_saswa_.vscode_extensions_tizen.vscode-tizen-sdk_tools_tizen-core_dotnet_toolchains_dotnet_builder__rule
+  command = c:/Users/saswa/.vscode/extensions/tizen.vscode-tizen-sdk/tools/tizen-core/tz web-build -o c$:/Users/saswa/OneDrive/Desktop/DigiDisplay/DigiDisplay/Debug/projects/DigiDisplay -p c$:/Users/saswa/OneDrive/Desktop/DigiDisplay/DigiDisplay -s c$:/Users/saswa/OneDrive/Desktop/DigiDisplay/DigiDisplay/Debug/status/DigiDisplay.build_web
+  description = Build web-project : DigiDisplay
+  restat = 1
+
+build status/DigiDisplay.build_web projects/DigiDisplay/.project projects/DigiDisplay/.tproject projects/DigiDisplay/DigiDisplay.csproj projects/DigiDisplay/Directory.Build.targets projects/DigiDisplay/config.xml projects/DigiDisplay/css/style.css projects/DigiDisplay/icon.png projects/DigiDisplay/images/tizen_32.png projects/DigiDisplay/index.html projects/DigiDisplay/js/main.js projects/DigiDisplay/obj/Debug/net6.0-tizen9.0/DigiDisplay.AssemblyInfo.cs projects/DigiDisplay/obj/Debug/net6.0-tizen9.0/DigiDisplay.AssemblyInfoInputs.cache projects/DigiDisplay/obj/Debug/net6.0-tizen9.0/DigiDisplay.GeneratedMSBuildEditorConfig.editorconfig projects/DigiDisplay/obj/Debug/net6.0-tizen9.0/DigiDisplay.assets.cache projects/DigiDisplay/obj/DigiDisplay.csproj.nuget.dgspec.json projects/DigiDisplay/obj/DigiDisplay.csproj.nuget.g.props projects/DigiDisplay/obj/DigiDisplay.csproj.nuget.g.targets projects/DigiDisplay/obj/project.assets.json projects/DigiDisplay/obj/project.nuget.cache projects/DigiDisplay/tizen_web_project.yaml: __DigiDisplay_DigiDisplay.build_web__c__Users_saswa_.vscode_extensions_tizen.vscode-tizen-sdk_tools_tizen-core_dotnet_toolchains_dotnet_builder__rule | ../.project ../.tproject ../DigiDisplay.csproj ../Directory.Build.targets ../config.xml ../css/style.css ../icon.png ../images/tizen_32.png ../index.html ../js/main.js ../obj/Debug/net6.0-tizen9.0/DigiDisplay.AssemblyInfo.cs ../obj/Debug/net6.0-tizen9.0/DigiDisplay.AssemblyInfoInputs.cache ../obj/Debug/net6.0-tizen9.0/DigiDisplay.GeneratedMSBuildEditorConfig.editorconfig ../obj/Debug/net6.0-tizen9.0/DigiDisplay.assets.cache ../obj/DigiDisplay.csproj.nuget.dgspec.json ../obj/DigiDisplay.csproj.nuget.g.props ../obj/DigiDisplay.csproj.nuget.g.targets ../obj/project.assets.json ../obj/project.nuget.cache ../tizen_web_project.yaml
+
+build obj/DigiDisplay/DigiDisplay.build_web.stamp: stamp status/DigiDisplay.build_web projects/DigiDisplay/.project projects/DigiDisplay/.tproject projects/DigiDisplay/DigiDisplay.csproj projects/DigiDisplay/Directory.Build.targets projects/DigiDisplay/config.xml projects/DigiDisplay/css/style.css projects/DigiDisplay/icon.png projects/DigiDisplay/images/tizen_32.png projects/DigiDisplay/index.html projects/DigiDisplay/js/main.js projects/DigiDisplay/obj/Debug/net6.0-tizen9.0/DigiDisplay.AssemblyInfo.cs projects/DigiDisplay/obj/Debug/net6.0-tizen9.0/DigiDisplay.AssemblyInfoInputs.cache projects/DigiDisplay/obj/Debug/net6.0-tizen9.0/DigiDisplay.GeneratedMSBuildEditorConfig.editorconfig projects/DigiDisplay/obj/Debug/net6.0-tizen9.0/DigiDisplay.assets.cache projects/DigiDisplay/obj/DigiDisplay.csproj.nuget.dgspec.json projects/DigiDisplay/obj/DigiDisplay.csproj.nuget.g.props projects/DigiDisplay/obj/DigiDisplay.csproj.nuget.g.targets projects/DigiDisplay/obj/project.assets.json projects/DigiDisplay/obj/project.nuget.cache projects/DigiDisplay/tizen_web_project.yaml
+build obj/DigiDisplay/all.stamp: stamp obj/DigiDisplay/DigiDisplay.build_web.stamp
+build obj/DigiDisplay/hash.stamp: stamp

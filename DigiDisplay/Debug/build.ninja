@@ -1,0 +1,39 @@
+ninja_required_version = 1.7.2
+
+rule gn
+  command = ../../../../../.vscode/extensions/tizen.vscode-tizen-sdk/tools/tizen-core/tgn.exe --root=./.. -q --c gen .
+  description = Regenerating ninja files
+
+rule tz_gn
+  command = c:/Users/saswa/.vscode/extensions/tizen.vscode-tizen-sdk/tools/tizen-core/tz.exe gen .
+  description = Regenerating build files
+
+build build.tz: tz_gn
+  generator = 1
+  depfile = build.tz.d
+
+build build.ninja: gn | build.tz
+  generator = 1
+  depfile = build.ninja.d
+
+subninja toolchain.ninja
+
+build DigiDisplay.build_web: phony obj/DigiDisplay/DigiDisplay.build_web.stamp
+build build: phony obj/Build/build.stamp
+build pack: phony obj/Build/pack.stamp
+build Build$:build: phony obj/Build/build.stamp
+build Build$:hash: phony obj/Build/hash.stamp
+build Build$:pack: phony obj/Build/pack.stamp
+build DigiDisplay$:DigiDisplay.build_web: phony obj/DigiDisplay/DigiDisplay.build_web.stamp
+build DigiDisplay$:all: phony obj/DigiDisplay/all.stamp
+build DigiDisplay$:hash: phony obj/DigiDisplay/hash.stamp
+
+build all: phony $
+    obj/Build/build.stamp $
+    obj/Build/hash.stamp $
+    obj/Build/pack.stamp $
+    obj/DigiDisplay/DigiDisplay.build_web.stamp $
+    obj/DigiDisplay/all.stamp $
+    obj/DigiDisplay/hash.stamp
+
+default all

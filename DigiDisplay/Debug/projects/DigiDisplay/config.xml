@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://yourdomain/DigiDisplay" version="1.0.0" viewmodes="maximized">
+   <name>DigiDisplay</name>
+   <icon src="icon.png"></icon>
+   <content src="index.html"></content>
+   <feature name="http://tizen.org/feature/screen.size.all"></feature>
+   <tizen:application id="PQqmxLaXEm.DigiDisplay" package="PQqmxLaXEm" required_version="9.0"></tizen:application>
+   <tizen:profile name="tizen"></tizen:profile>
+</widget>

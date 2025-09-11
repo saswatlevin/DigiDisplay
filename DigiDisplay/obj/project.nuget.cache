@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "/ZbRIjgq1Ak=",
+  "success": true,
+  "projectFilePath": "c:\\Users\\saswa\\OneDrive\\Desktop\\DigiDisplay\\DigiDisplay\\DigiDisplay.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\saswa\\.nuget\\packages\\samsung.tizen.ref\\10.0.115\\samsung.tizen.ref.10.0.115.nupkg.sha512"
+  ],
+  "logs": []
+}
