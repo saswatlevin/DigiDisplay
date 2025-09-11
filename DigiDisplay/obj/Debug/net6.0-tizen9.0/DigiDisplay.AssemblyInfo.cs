@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DigiDisplay")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4ae71a4dd3d28a5f66c46ba3af73aa4f9297fe82")]
 [assembly: System.Reflection.AssemblyProductAttribute("DigiDisplay")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DigiDisplay")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -4,8 +4,10 @@ web_project("DigiDisplay") {
   files = [
       "//.project",
       "//.tproject",
+      "//.vscode\launch.json",
       "//DigiDisplay.csproj",
       "//Directory.Build.targets",
+      "//README.md",
       "//config.xml",
       "//css\style.css",
       "//icon.png",

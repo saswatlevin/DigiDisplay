@@ -4,6 +4,9 @@
    <icon src="icon.png"></icon>
    <content src="index.html"></content>
    <feature name="http://tizen.org/feature/screen.size.all"></feature>
+   <feature name="http://tizen.org/feature/network.telephony"></feature>
+   <feature name="http://tizen.org/feature/network.wifi"></feature>
+   <tizen:privilege name="http://tizen.org/privilege/internet"></tizen:privilege>
    <tizen:application id="PQqmxLaXEm.DigiDisplay" package="PQqmxLaXEm" required_version="9.0"></tizen:application>
    <tizen:profile name="tizen"></tizen:profile>
 </widget>
