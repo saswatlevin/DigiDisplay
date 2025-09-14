@@ -7,8 +7,7 @@
    <feature name="http://tizen.org/feature/network.telephony"></feature>
    <feature name="http://tizen.org/feature/network.wifi"></feature>
    <tizen:privilege name="http://tizen.org/privilege/internet"></tizen:privilege>
-   <tizen:privilege name="http://tizen.org/privilege/mediastorage"></tizen:privilege>
-   <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"></tizen:privilege>
+   <tizen:privilege name="http://tizen.org/privilege/content.read"/>
    <tizen:application id="PQqmxLaXEm.DigiDisplay" package="PQqmxLaXEm" required_version="7.0"></tizen:application>
    <tizen:profile name="tizen"></tizen:profile>
 </widget>

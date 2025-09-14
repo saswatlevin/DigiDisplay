@@ -1,3 +1,29 @@
+// Global debug function - accessible everywhere
+function debug(msg) {
+    let el = document.getElementById("debug");
+    if (!el) {
+        el = document.createElement("div");
+        el.id = "debug";
+        el.style.cssText = "position:fixed;bottom:0;left:0;width:100%;height:70px;overflow-y:auto;background:black;color:lime;font-size:14px;z-index:9999;padding:4px;border-top:2px solid lime;";
+        document.body.appendChild(el);
+    }
+    
+    // Create new debug message div
+    const msgDiv = document.createElement("div");
+    msgDiv.textContent = String(msg);
+    msgDiv.style.marginBottom = "2px";
+    el.appendChild(msgDiv);
+    
+    // Limit to maximum 200 debug messages to prevent memory issues
+    /*const maxMessages = 1000;
+    while (el.children.length > maxMessages) {
+        el.removeChild(el.firstChild);
+    }*/
+    
+    // Auto-scroll to bottom to show latest message
+    //el.scrollTop = el.scrollHeight;
+}
+
 /**
  * DigiDisplay Video Player - Tizen Web App
  * Simple video player that loads and plays videos directly from URLs
@@ -12,6 +38,13 @@ class VideoPlayer {
     }
 
     /**
+     * Debug function accessible within the class
+     */
+    debug(msg) {
+        debug(msg); // Call the global debug function
+    }
+
+    /**
      * Initialize the application
      */
     async initializeApp() {
@@ -20,6 +53,7 @@ class VideoPlayer {
             
             // Setup event listeners
             this.setupEventListeners();
+            this.debug("Set up event listeners");
             
             // Update app status
             this.updateAppStatus('Ready to play videos');
@@ -106,15 +140,18 @@ class VideoPlayer {
      * Handle video loading
      */
     async handleLoadVideo() {
+        this.debug("In handleLoadVideo");
         const urlInput = document.getElementById('video-url');
         const url = urlInput.value.trim();
 
         if (!url) {
+            this.debug("handleLoadVideo - Please enter a video URL");
             this.showNotification('Please enter a video URL', 'warning');
             return;
         }
 
         if (!this.isValidUrl(url)) {
+             this.debug("handleLoadVideo - Please enter a valid URL");
             this.showNotification('Please enter a valid URL', 'error');
             return;
         }
@@ -127,8 +164,10 @@ class VideoPlayer {
         }
 
         try {
+            this.debug("handleLoadVideo - Loading video from URL: " + url);
             await this.loadVideo(url);
         } catch (error) {
+            this.debug("handleLoadVideo - Failed to load video " + error.message);
             this.showNotification(`Failed to load video: ${error.message}`, 'error');
             // console.error('Load error:', error);
         }
@@ -138,6 +177,7 @@ class VideoPlayer {
      * Load video from URL
      */
     async loadVideo(url) {
+        this.debug("In loadVideo. URL is " + url);
         this.isLoading = true;
         const loadBtn = document.getElementById('load-btn');
         const progressContainer = document.getElementById('download-progress');
@@ -148,6 +188,7 @@ class VideoPlayer {
             loadBtn.disabled = true;
             progressContainer.style.display = 'flex';
             this.updateLoadStatus('Loading video...', 'info');
+            this.debug("loadVideo - Loading video... ");
 
             // Show progress (simplified for direct URL loading)
             this.simulateProgress((progress) => {
@@ -163,14 +204,19 @@ class VideoPlayer {
             
             // Set the video source
             videoSource.src = url;
+            this.debug("loadVideo - video source set to URL " + url);
+            
             videoPlayer.load();
             
             this.currentVideo = url;
             this.updateAppStatus('Video loaded successfully');
             this.showNotification('Video loaded successfully!', 'success');
             this.updateLoadStatus('Video loaded', 'success');
+            this.debug("loadVideo - Video loaded successfully. URL is " + url);
+
 
         } catch (error) {
+            this.debug("loadVideo - Video load failed. URL is " + url);
             this.updateLoadStatus(`Load failed: ${error.message}`, 'error');
             throw error;
         } finally {
@@ -199,31 +245,48 @@ class VideoPlayer {
         }, 200);
     }
 
-    /**
+    /*
      * Video playback controls
      */
     playVideo() {
+        console.log("In playVideo");
+        this.debug("In playVideo");
         const videoPlayer = document.getElementById('video-player');
-        if (videoPlayer.src) {
-            this.showNotification("src is ", toString(src));
+        const videoSource = document.getElementById('video-source');
+        
+        // Check if video has a source and is ready to play
+        if (videoSource.src || this.currentVideo) {
+            console.log("playVideo true - Video source available");
+            this.debug("playVideo - Video source available. Source: " + (videoSource.src || this.currentVideo));
+            
             videoPlayer.play().then(() => {
+                console.log("playVideo - playing video");
+                this.debug("playVideo - Playing video successfully. Source: " + (videoSource.src || this.currentVideo));
                 this.updatePlaybackStatus('Playing', 'success');
             }).catch(error => {
+                console.log("playVideo - error");
+                this.debug("playVideo - Video playing failed. Error: " + error.message);
                 this.updatePlaybackStatus(`Play failed: ${error.message}`, 'error');
                 this.showNotification(`Playback error: ${error.message}`, 'error');
             });
         } else {
+            console.log("playVideo false - No video loaded");
+            this.debug("playVideo - No video loaded. Please load a video first.");
             this.showNotification('No video loaded. Please load a video first.', 'warning');
         }
     }
 
     pauseVideo() {
+        this.debug("In pauseVideo");
+        console.log("In pauseVideo");
         const videoPlayer = document.getElementById('video-player');
         videoPlayer.pause();
         this.updatePlaybackStatus('Paused', 'info');
     }
 
     stopVideo() {
+        this.debug("In stopVideo");
+        console.log("In stopVideo");
         const videoPlayer = document.getElementById('video-player');
         videoPlayer.pause();
         videoPlayer.currentTime = 0;
@@ -231,6 +294,8 @@ class VideoPlayer {
     }
 
     setVolume(volume) {
+        this.debug("In setVolume");
+        console.log("In setVolume");
         const videoPlayer = document.getElementById('video-player');
         videoPlayer.volume = volume / 100;
     }
@@ -275,6 +340,7 @@ class VideoPlayer {
      * Utility functions
      */
     isValidUrl(string) {
+        this.debug("In isValidUrl.");
         try {
             new URL(string);
             return true;
