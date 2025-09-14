@@ -1,1 +1,1 @@
-build.tz: ../tizen_web_project.yaml
+build.tz: c:/Users/saswa/.vscode/extensions/tizen.vscode-tizen-sdk-data/profile/profiles.xml ../tizen_web_project.yaml

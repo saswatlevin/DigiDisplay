@@ -1,16 +1,12 @@
 /**
- * DigiDisplay Video Manager - Tizen Web App
- * Comprehensive video management system for Samsung TVs
+ * DigiDisplay Video Player - Tizen Web App
+ * Simple video player that loads and plays videos directly from URLs
  */
 
-class VideoManager {
+class VideoPlayer {
     constructor() {
-        this.videoStorage = null;
-        this.downloadedVideos = new Map();
         this.currentVideo = null;
-        this.isDownloading = false;
-        this.supportedFormats = ['mp4', 'avi', 'mkv', 'webm', 'mov'];
-        this.maxFileSize = 500 * 1024 * 1024; // 500MB limit for TV storage
+        this.isLoading = false;
         
         this.initializeApp();
     }
@@ -22,17 +18,11 @@ class VideoManager {
         try {
             this.showLoadingOverlay('Initializing...');
             
-            // Initialize Tizen filesystem
-            await this.initializeStorage();
-            
-            // Load existing videos
-            await this.loadVideoLibrary();
-            
             // Setup event listeners
             this.setupEventListeners();
             
-            // Check storage status
-            await this.updateStorageStatus();
+            // Update app status
+            this.updateAppStatus('Ready to play videos');
             
             this.hideLoadingOverlay();
             this.showNotification('Application initialized successfully', 'success');
@@ -40,28 +30,8 @@ class VideoManager {
         } catch (error) {
             this.hideLoadingOverlay();
             this.showNotification(`Initialization failed: ${error.message}`, 'error');
-            console.error('Initialization error:', error);
+            // console.error('Initialization error:', error);
         }
-    }
-
-    /**
-     * Initialize Tizen filesystem storage
-     */
-    async initializeStorage() {
-        return new Promise((resolve, reject) => {
-            try {
-                // Request filesystem access
-                tizen.filesystem.resolve('documents', (dir) => {
-                    this.videoStorage = dir;
-                    console.log('Storage initialized:', dir.fullPath);
-                    resolve();
-                }, (error) => {
-                    reject(new Error(`Storage initialization failed: ${error.message}`));
-                }, 'rw');
-            } catch (error) {
-                reject(new Error(`Filesystem access denied: ${error.message}`));
-            }
-        });
     }
 
     /**
@@ -70,21 +40,21 @@ class VideoManager {
     setupEventListeners() {
         // Tizen hardware key handling
         document.addEventListener('tizenhwkey', (e) => {
-            if (e.keyName === "back") {
+        if (e.keyName === "back") {
             try {
                 tizen.application.getCurrentApplication().exit();
             } catch (ignore) {}
         }
     });
 
-        // Download functionality
-        const downloadBtn = document.getElementById('download-btn');
+        // Video loading functionality
+        const loadBtn = document.getElementById('load-btn');
         const videoUrlInput = document.getElementById('video-url');
         
-        downloadBtn.addEventListener('click', () => this.handleDownload());
+        loadBtn.addEventListener('click', () => this.handleLoadVideo());
         videoUrlInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                this.handleDownload();
+                this.handleLoadVideo();
             }
         });
 
@@ -105,13 +75,8 @@ class VideoManager {
         videoPlayer.addEventListener('canplay', () => this.updatePlaybackStatus('Ready to play', 'success'));
         videoPlayer.addEventListener('error', (e) => this.handleVideoError(e));
         videoPlayer.addEventListener('ended', () => this.updatePlaybackStatus('Video ended', 'info'));
-
-        // Library controls
-        const refreshBtn = document.getElementById('refresh-library');
-        const clearAllBtn = document.getElementById('clear-all');
-        
-        refreshBtn.addEventListener('click', () => this.loadVideoLibrary());
-        clearAllBtn.addEventListener('click', () => this.clearAllVideos());
+        videoPlayer.addEventListener('playing', () => this.updatePlaybackStatus('Playing', 'success'));
+        videoPlayer.addEventListener('pause', () => this.updatePlaybackStatus('Paused', 'info'));
 
         // Focus management for TV remote
         this.setupFocusManagement();
@@ -138,9 +103,9 @@ class VideoManager {
     }
 
     /**
-     * Handle video download
+     * Handle video loading
      */
-    async handleDownload() {
+    async handleLoadVideo() {
         const urlInput = document.getElementById('video-url');
         const url = urlInput.value.trim();
 
@@ -154,378 +119,84 @@ class VideoManager {
             return;
         }
 
-        if (!this.isSupportedFormat(url)) {
-            this.showNotification('Unsupported video format. Supported: MP4, AVI, MKV, WebM, MOV', 'warning');
-            return;
-        }
+        // Format validation removed to support streaming URLs and URLs without extensions
 
-        if (this.isDownloading) {
-            this.showNotification('Download already in progress', 'warning');
+        if (this.isLoading) {
+            this.showNotification('Video loading already in progress', 'warning');
             return;
         }
 
         try {
-            await this.downloadVideo(url);
+            await this.loadVideo(url);
         } catch (error) {
-            this.showNotification(`Download failed: ${error.message}`, 'error');
-            console.error('Download error:', error);
+            this.showNotification(`Failed to load video: ${error.message}`, 'error');
+            // console.error('Load error:', error);
         }
     }
 
     /**
-     * Download video from URL
+     * Load video from URL
      */
-    async downloadVideo(url) {
-        this.isDownloading = true;
-        const downloadBtn = document.getElementById('download-btn');
+    async loadVideo(url) {
+        this.isLoading = true;
+        const loadBtn = document.getElementById('load-btn');
         const progressContainer = document.getElementById('download-progress');
         const progressFill = document.getElementById('progress-fill');
         const progressText = document.getElementById('progress-text');
-        const statusElement = document.getElementById('download-status');
 
         try {
-            downloadBtn.disabled = true;
+            loadBtn.disabled = true;
             progressContainer.style.display = 'flex';
-            this.updateDownloadStatus('Starting download...', 'info');
+            this.updateLoadStatus('Loading video...', 'info');
 
-            // Create filename from URL
-            const filename = this.generateFilename(url);
-            const filePath = `videos/${filename}`;
-
-            // Check if file already exists
-            if (await this.fileExists(filePath)) {
-                throw new Error('Video already exists in library');
-            }
-
-            // Create videos directory if it doesn't exist
-            await this.ensureVideosDirectory();
-
-            // Download with progress tracking
-            const response = await this.downloadWithProgress(url, (progress) => {
+            // Show progress (simplified for direct URL loading)
+            this.simulateProgress((progress) => {
                 const percentage = Math.round(progress);
                 progressFill.style.width = `${percentage}%`;
                 progressText.textContent = `${percentage}%`;
-                this.updateDownloadStatus(`Downloading... ${percentage}%`, 'info');
+                this.updateLoadStatus(`Loading... ${percentage}%`, 'info');
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            // Save to local storage
-            await this.saveVideoToStorage(response, filePath);
+            // Load video directly into the player
+            const videoPlayer = document.getElementById('video-player');
+            const videoSource = document.getElementById('video-source');
             
-            // Update library
-            await this.loadVideoLibrary();
+            // Set the video source
+            videoSource.src = url;
+            videoPlayer.load();
             
-            // Clear form
-            document.getElementById('video-url').value = '';
-            
-            this.showNotification('Video downloaded successfully!', 'success');
-            this.updateDownloadStatus('Download completed', 'success');
+            this.currentVideo = url;
+            this.updateAppStatus('Video loaded successfully');
+            this.showNotification('Video loaded successfully!', 'success');
+            this.updateLoadStatus('Video loaded', 'success');
 
         } catch (error) {
-            this.updateDownloadStatus(`Download failed: ${error.message}`, 'error');
+            this.updateLoadStatus(`Load failed: ${error.message}`, 'error');
             throw error;
         } finally {
-            this.isDownloading = false;
-            downloadBtn.disabled = false;
+            this.isLoading = false;
+            loadBtn.disabled = false;
             setTimeout(() => {
                 progressContainer.style.display = 'none';
                 progressFill.style.width = '0%';
                 progressText.textContent = '0%';
-            }, 3000);
+            }, 2000);
         }
     }
 
     /**
-     * Download with progress tracking
+     * Simulate loading progress for better UX
      */
-    async downloadWithProgress(url, onProgress) {
-        return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            
-            xhr.open('GET', url, true);
-            xhr.responseType = 'blob';
-            
-            xhr.onprogress = (event) => {
-                if (event.lengthComputable) {
-                    const progress = (event.loaded / event.total) * 100;
-                    onProgress(progress);
-                }
-            };
-            
-            xhr.onload = () => {
-                if (xhr.status === 200) {
-                    resolve(xhr);
-                } else {
-                    reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
-                }
-            };
-            
-            xhr.onerror = () => {
-                reject(new Error('Network error occurred'));
-            };
-            
-            xhr.ontimeout = () => {
-                reject(new Error('Download timeout'));
-            };
-            
-            xhr.timeout = 300000; // 5 minutes timeout
-            
-            xhr.send();
-        });
-    }
-
-    /**
-     * Save video to Tizen filesystem
-     */
-    async saveVideoToStorage(response, filePath) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            
-            reader.onload = () => {
-                const arrayBuffer = reader.result;
-                
-                this.videoStorage.createFile(filePath, (file) => {
-                    file.openStream('w', (fileStream) => {
-                        fileStream.write(arrayBuffer);
-                        fileStream.close();
-                        console.log('Video saved to:', file.fullPath);
-                        resolve();
-                    }, (error) => {
-                        reject(new Error(`Failed to write file: ${error.message}`));
-                    });
-                }, (error) => {
-                    reject(new Error(`Failed to create file: ${error.message}`));
-                });
-            };
-            
-            reader.onerror = () => {
-                reject(new Error('Failed to read video data'));
-            };
-            
-            reader.readAsArrayBuffer(response.response);
-        });
-    }
-
-    /**
-     * Ensure videos directory exists
-     */
-    async ensureVideosDirectory() {
-        return new Promise((resolve, reject) => {
-            this.videoStorage.createDirectory('videos', (dir) => {
-                console.log('Videos directory ready');
-                resolve();
-            }, (error) => {
-                if (error.name === 'InvalidValuesError') {
-                    // Directory already exists
-                    resolve();
-                } else {
-                    reject(new Error(`Failed to create videos directory: ${error.message}`));
-                }
-            });
-        });
-    }
-
-    /**
-     * Check if file exists
-     */
-    async fileExists(filePath) {
-        return new Promise((resolve) => {
-            this.videoStorage.resolve(filePath, (file) => {
-                resolve(true);
-            }, () => {
-                resolve(false);
-            });
-        });
-    }
-
-    /**
-     * Load video library from storage
-     */
-    async loadVideoLibrary() {
-        try {
-            this.showLoadingOverlay('Loading video library...');
-            
-            const videoList = document.getElementById('video-list');
-            videoList.innerHTML = '<div class="no-videos">Loading videos...</div>';
-
-            await this.ensureVideosDirectory();
-            
-            this.videoStorage.listFiles((files) => {
-                const videoFiles = files.filter(file => 
-                    this.supportedFormats.some(format => 
-                        file.name.toLowerCase().endsWith(`.${format}`)
-                    )
-                );
-
-                if (videoFiles.length === 0) {
-                    videoList.innerHTML = '<div class="no-videos">No videos downloaded yet</div>';
-                } else {
-                    videoList.innerHTML = '';
-                    videoFiles.forEach(file => {
-                        this.addVideoToList(file);
-                    });
-                }
-                
-                this.hideLoadingOverlay();
-            }, (error) => {
-                console.error('Failed to list files:', error);
-                videoList.innerHTML = '<div class="no-videos">Failed to load videos</div>';
-                this.hideLoadingOverlay();
-            }, 'videos');
-            
-        } catch (error) {
-            this.hideLoadingOverlay();
-            this.showNotification(`Failed to load library: ${error.message}`, 'error');
-            console.error('Library load error:', error);
-        }
-    }
-
-    /**
-     * Add video item to library list
-     */
-    addVideoToList(file) {
-        const videoList = document.getElementById('video-list');
-        const videoItem = document.createElement('div');
-        videoItem.className = 'video-item';
-        videoItem.tabIndex = 0;
-        
-        const fileSize = this.formatFileSize(file.size);
-        const fileName = file.name;
-        
-        videoItem.innerHTML = `
-            <div class="video-item-header">
-                <div class="video-name">${fileName}</div>
-                <div class="video-size">${fileSize}</div>
-            </div>
-            <div class="video-actions">
-                <button class="btn btn-control btn-small" onclick="videoManager.playVideoFromLibrary('${file.fullPath}')">Play</button>
-                <button class="btn btn-secondary btn-small" onclick="videoManager.deleteVideo('${file.fullPath}', '${fileName}')">Delete</button>
-            </div>
-        `;
-        
-        videoItem.addEventListener('click', () => {
-            this.playVideoFromLibrary(file.fullPath);
-        });
-        
-        videoList.appendChild(videoItem);
-    }
-
-    /**
-     * Play video from library
-     */
-    playVideoFromLibrary(filePath) {
-        try {
-            const videoPlayer = document.getElementById('video-player');
-            const videoSource = document.getElementById('video-source');
-            
-            // Convert Tizen file path to file:// URL
-            const fileUrl = `file://${filePath}`;
-            
-            videoSource.src = fileUrl;
-            videoPlayer.load();
-            
-            this.currentVideo = filePath;
-            this.updatePlaybackStatus('Loading video from library...', 'info');
-            this.showNotification('Video loaded from library', 'success');
-            
-        } catch (error) {
-            this.showNotification(`Failed to play video: ${error.message}`, 'error');
-            console.error('Playback error:', error);
-        }
-    }
-
-    /**
-     * Delete video from storage
-     */
-    async deleteVideo(filePath, fileName) {
-        if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
-            return;
-        }
-
-        try {
-            this.showLoadingOverlay('Deleting video...');
-            
-            this.videoStorage.resolve(filePath, (file) => {
-                file.deleteFile(() => {
-                    this.showNotification('Video deleted successfully', 'success');
-                    this.loadVideoLibrary();
-                }, (error) => {
-                    this.hideLoadingOverlay();
-                    this.showNotification(`Failed to delete video: ${error.message}`, 'error');
-                });
-            }, (error) => {
-                this.hideLoadingOverlay();
-                this.showNotification(`Video not found: ${error.message}`, 'error');
-            });
-            
-        } catch (error) {
-            this.hideLoadingOverlay();
-            this.showNotification(`Delete failed: ${error.message}`, 'error');
-            console.error('Delete error:', error);
-        }
-    }
-
-    /**
-     * Clear all videos
-     */
-    async clearAllVideos() {
-        if (!confirm('Are you sure you want to delete ALL videos? This action cannot be undone.')) {
-            return;
-        }
-
-        try {
-            this.showLoadingOverlay('Clearing all videos...');
-            
-            this.videoStorage.listFiles((files) => {
-                const videoFiles = files.filter(file => 
-                    this.supportedFormats.some(format => 
-                        file.name.toLowerCase().endsWith(`.${format}`)
-                    )
-                );
-
-                if (videoFiles.length === 0) {
-                    this.hideLoadingOverlay();
-                    this.showNotification('No videos to delete', 'info');
-                    return;
-                }
-
-                let deletedCount = 0;
-                const totalVideos = videoFiles.length;
-
-                const deleteNext = () => {
-                    if (deletedCount >= totalVideos) {
-                        this.hideLoadingOverlay();
-                        this.showNotification(`Deleted ${totalVideos} videos`, 'success');
-                        this.loadVideoLibrary();
-                        return;
-                    }
-
-                    const file = videoFiles[deletedCount];
-                    file.deleteFile(() => {
-                        deletedCount++;
-                        deleteNext();
-                    }, (error) => {
-                        console.error(`Failed to delete ${file.name}:`, error);
-                        deletedCount++;
-                        deleteNext();
-                    });
-                };
-
-                deleteNext();
-                
-            }, (error) => {
-                this.hideLoadingOverlay();
-                this.showNotification(`Failed to clear videos: ${error.message}`, 'error');
-            }, 'videos');
-            
-        } catch (error) {
-            this.hideLoadingOverlay();
-            this.showNotification(`Clear failed: ${error.message}`, 'error');
-            console.error('Clear error:', error);
-        }
+    simulateProgress(onProgress) {
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+            }
+            onProgress(progress);
+        }, 200);
     }
 
     /**
@@ -538,9 +209,10 @@ class VideoManager {
                 this.updatePlaybackStatus('Playing', 'success');
             }).catch(error => {
                 this.updatePlaybackStatus(`Play failed: ${error.message}`, 'error');
+                this.showNotification(`Playback error: ${error.message}`, 'error');
             });
         } else {
-            this.showNotification('No video loaded', 'warning');
+            this.showNotification('No video loaded. Please load a video first.', 'warning');
         }
     }
 
@@ -578,7 +250,7 @@ class VideoManager {
                     errorMessage = 'Network error occurred';
                     break;
                 case video.error.MEDIA_ERR_DECODE:
-                    errorMessage = 'Video format not supported';
+                    errorMessage = 'Video format not supported or corrupted';
                     break;
                 case video.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
                     errorMessage = 'Video source not supported';
@@ -591,18 +263,11 @@ class VideoManager {
     }
 
     /**
-     * Update storage status
+     * Update app status
      */
-    async updateStorageStatus() {
-        try {
-            // Get available storage space (simplified for Tizen)
-            const statusElement = document.getElementById('storage-status');
-            statusElement.textContent = 'Storage: Available';
-        } catch (error) {
-            const statusElement = document.getElementById('storage-status');
-            statusElement.textContent = 'Storage: Unknown';
-            console.error('Storage status error:', error);
-        }
+    updateAppStatus(message) {
+        const statusElement = document.getElementById('app-status');
+        statusElement.textContent = message;
     }
 
     /**
@@ -617,39 +282,7 @@ class VideoManager {
         }
     }
 
-    isSupportedFormat(url) {
-        const extension = url.split('.').pop().toLowerCase();
-        return this.supportedFormats.includes(extension);
-    }
-
-    generateFilename(url) {
-        const urlParts = url.split('/');
-        let filename = urlParts[urlParts.length - 1];
-        
-        // Remove query parameters
-        filename = filename.split('?')[0];
-        
-        // Add timestamp if no extension
-        if (!filename.includes('.')) {
-            filename = `video_${Date.now()}.mp4`;
-        }
-        
-        // Ensure unique filename
-        const timestamp = Date.now();
-        const nameParts = filename.split('.');
-        const extension = nameParts.pop();
-        const name = nameParts.join('.');
-        
-        return `${name}_${timestamp}.${extension}`;
-    }
-
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
+    // Format validation removed to support all video URLs including streaming URLs
 
     /**
      * UI Helper functions
@@ -682,7 +315,7 @@ class VideoManager {
         }, 5000);
     }
 
-    updateDownloadStatus(message, type) {
+    updateLoadStatus(message, type) {
         const statusElement = document.getElementById('download-status');
         statusElement.textContent = message;
         statusElement.className = `status-message status-${type}`;
@@ -696,22 +329,21 @@ class VideoManager {
 }
 
 // Initialize the application when DOM is loaded
-let videoManager;
+let videoPlayer;
 
 window.onload = function() {
     try {
-        videoManager = new VideoManager();
+        videoPlayer = new VideoPlayer();
     } catch (error) {
-        console.error('Failed to initialize VideoManager:', error);
+        // console.error('Failed to initialize VideoPlayer:', error);
         document.body.innerHTML = `
             <div style="display: flex; justify-content: center; align-items: center; height: 100vh; color: white; text-align: center;">
                 <div>
                     <h1>Initialization Error</h1>
-                    <p>Failed to initialize the video manager.</p>
+                    <p>Failed to initialize the video player.</p>
                     <p>Error: ${error.message}</p>
                 </div>
             </div>
         `;
     }
 };
-

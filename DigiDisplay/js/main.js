@@ -205,6 +205,7 @@ class VideoPlayer {
     playVideo() {
         const videoPlayer = document.getElementById('video-player');
         if (videoPlayer.src) {
+            this.showNotification("src is ", toString(src));
             videoPlayer.play().then(() => {
                 this.updatePlaybackStatus('Playing', 'success');
             }).catch(error => {

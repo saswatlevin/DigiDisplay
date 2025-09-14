@@ -66,22 +66,22 @@ strip_debug_info = false
 
 
 # Use default signing profile for packaging
-default_signing_profile = "true"
+default_signing_profile = "false"
 
 # Author certificate for package signing
-author_cert = ""
+author_cert = "C:/Users/saswa/SamsungCertificate/DigiDisplayCertificate/author.p12"
 
 # Distributor certificate for package signing
-distributor_cert = ""
+distributor_cert = "C:/Users/saswa/SamsungCertificate/DigiDisplayCertificate/distributor.p12"
 
 # Distributor2 certificate for package signing
 distributor2_cert = ""
 
 # Author profile item password attr 
-author_pass_attr = ""
+author_pass_attr = "C:\Users\saswa\SamsungCertificate\DigiDisplayCertificate\author.pwd"
 
 # Distributor profile item password attr 
-distributor_pass_attr = ""
+distributor_pass_attr = "C:\Users\saswa\SamsungCertificate\DigiDisplayCertificate\distributor.pwd"
 
 # Distributor2 profile item password attr 
 distributor2_pass_attr = ""

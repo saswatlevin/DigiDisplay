@@ -16,20 +16,20 @@
     <div id="main" class="page">
         <!-- Header Section -->
         <header class="header">
-            <h1 class="app-title">DigiDisplay Video Manager</h1>
-            <div class="storage-info">
-                <span id="storage-status">Checking storage...</span>
+            <h1 class="app-title">DigiDisplay Video Player</h1>
+            <div class="app-info">
+                <span id="app-status">Ready to play videos</span>
             </div>
         </header>
 
         <!-- Main Content Area -->
         <main class="main-content">
-            <!-- Video Download Section -->
+            <!-- Video Load Section -->
             <section class="download-section" id="download-section">
-                <h2 class="section-title">Download Video</h2>
+                <h2 class="section-title">Load Video</h2>
                 <div class="input-group">
-                    <input type="url" id="video-url" class="url-input" placeholder="Enter video URL (MP4, AVI, MKV)" />
-                    <button id="download-btn" class="btn btn-primary" tabindex="1">Download</button>
+                    <input type="url" id="video-url" class="url-input" placeholder="Enter video URL (any format)" />
+                    <button id="load-btn" class="btn btn-primary" tabindex="1">Load Video</button>
                 </div>
                 <div id="download-progress" class="progress-container" style="display: none;">
                     <div class="progress-bar">
@@ -61,17 +61,6 @@
                 <div id="playback-status" class="status-message"></div>
             </section>
 
-            <!-- Video Library Section -->
-            <section class="library-section" id="library-section">
-                <h2 class="section-title">Video Library</h2>
-                <div class="library-controls">
-                    <button id="refresh-library" class="btn btn-secondary" tabindex="6">Refresh Library</button>
-                    <button id="clear-all" class="btn btn-danger" tabindex="7">Clear All Videos</button>
-                </div>
-                <div id="video-list" class="video-list">
-                    <div class="no-videos">No videos downloaded yet</div>
-                </div>
-            </section>
         </main>
 
         <!-- Status and Error Messages -->

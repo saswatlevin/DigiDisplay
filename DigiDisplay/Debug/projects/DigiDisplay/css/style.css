@@ -50,7 +50,7 @@ body {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.storage-info {
+.app-info {
     font-size: 1rem;
     color: #ccc;
     background: rgba(0, 0, 0, 0.3);
@@ -271,78 +271,7 @@ section {
     border: none;
 }
 
-/* Library Controls */
-.library-controls {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
 
-/* Video List */
-.video-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.video-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.video-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-.video-item:focus {
-    background: rgba(0, 188, 212, 0.1);
-}
-
-.video-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.video-name {
-    font-weight: 500;
-    color: #fff;
-    font-size: 1.1rem;
-}
-
-.video-size {
-    color: #888;
-    font-size: 0.9rem;
-}
-
-.video-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.btn-small {
-    padding: 8px 15px;
-    font-size: 0.9rem;
-    min-width: auto;
-}
-
-.no-videos {
-    text-align: center;
-    color: #888;
-    font-style: italic;
-    padding: 40px;
-    grid-column: 1 / -1;
-}
 
 /* Status Messages */
 .status-message {
@@ -475,9 +404,6 @@ section {
         font-size: 1.2rem;
     }
     
-    .video-list {
-        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    }
 }
 
 @media (max-width: 768px) {
@@ -507,9 +433,6 @@ section {
         margin-left: 0;
     }
     
-    .library-controls {
-        justify-content: center;
-    }
 }
 
 /* Accessibility Improvements */
@@ -527,9 +450,6 @@ section {
         border: 2px solid currentColor;
     }
     
-    .video-item {
-        border: 2px solid #fff;
-    }
     
     .progress-bar {
         border: 2px solid #fff;
