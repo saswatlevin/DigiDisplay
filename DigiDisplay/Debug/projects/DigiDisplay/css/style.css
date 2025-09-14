@@ -273,6 +273,83 @@ section {
 
 
 
+/* Debug Console */
+.debug-section {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #333;
+}
+
+.debug-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.debug-console {
+    flex: 1;
+    height: 120px;
+    overflow-y: auto;
+    background: #000;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    line-height: 1.4;
+}
+
+.debug-console::-webkit-scrollbar {
+    width: 8px;
+}
+
+.debug-console::-webkit-scrollbar-track {
+    background: #222;
+    border-radius: 4px;
+}
+
+.debug-console::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+.debug-console::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+.debug-scroll-btn {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(45deg, #333, #555);
+    color: #00ff00;
+    border: 1px solid #555;
+    border-radius: 5px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.debug-scroll-btn:hover {
+    background: linear-gradient(45deg, #444, #666);
+    border-color: #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.debug-scroll-btn:active {
+    background: linear-gradient(45deg, #222, #444);
+    transform: translateY(1px);
+}
+
+.debug-scroll-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: linear-gradient(45deg, #222, #333);
+}
+
 /* Status Messages */
 .status-message {
     padding: 15px;

@@ -2,9 +2,10 @@
 function debug(msg) {
     let el = document.getElementById("debug");
     if (!el) {
+        // If debug console doesn't exist, create a temporary one
         el = document.createElement("div");
         el.id = "debug";
-        el.style.cssText = "position:fixed;bottom:0;left:0;width:100%;height:70px;overflow-y:auto;background:black;color:lime;font-size:14px;z-index:9999;padding:4px;border-top:2px solid lime;";
+        el.style.cssText = "position:fixed;bottom:0;left:0;width:100%;height:90px;overflow-y:auto;background:black;color:lime;font-size:14px;z-index:9999;padding:4px;border-top:2px solid lime;";
         document.body.appendChild(el);
     }
     
@@ -15,13 +16,18 @@ function debug(msg) {
     el.appendChild(msgDiv);
     
     // Limit to maximum 200 debug messages to prevent memory issues
-    /*const maxMessages = 1000;
+    const maxMessages = 200;
     while (el.children.length > maxMessages) {
         el.removeChild(el.firstChild);
-    }*/
+    }
     
     // Auto-scroll to bottom to show latest message
-    //el.scrollTop = el.scrollHeight;
+    el.scrollTop = el.scrollHeight;
+    
+    // Update scroll button states if they exist
+    if (window.videoPlayer && typeof window.videoPlayer.updateDebugScrollButtons === 'function') {
+        window.videoPlayer.updateDebugScrollButtons();
+    }
 }
 
 /**
@@ -112,8 +118,57 @@ class VideoPlayer {
         videoPlayer.addEventListener('playing', () => this.updatePlaybackStatus('Playing', 'success'));
         videoPlayer.addEventListener('pause', () => this.updatePlaybackStatus('Paused', 'info'));
 
+        // Debug console scroll buttons
+        this.setupDebugScrollButtons();
+
         // Focus management for TV remote
         this.setupFocusManagement();
+    }
+
+    /**
+     * Setup debug console scroll buttons
+     */
+    setupDebugScrollButtons() {
+        const debugConsole = document.getElementById('debug');
+        const scrollUpBtn = document.getElementById('debug-scroll-up');
+        const scrollDownBtn = document.getElementById('debug-scroll-down');
+
+        if (scrollUpBtn && scrollDownBtn && debugConsole) {
+            scrollUpBtn.addEventListener('click', () => {
+                debugConsole.scrollTop -= 30; // Scroll up by 30px
+                this.updateDebugScrollButtons();
+            });
+
+            scrollDownBtn.addEventListener('click', () => {
+                debugConsole.scrollTop += 30; // Scroll down by 30px
+                this.updateDebugScrollButtons();
+            });
+
+            // Update button states when scrolling with mouse
+            debugConsole.addEventListener('scroll', () => {
+                this.updateDebugScrollButtons();
+            });
+
+            // Initial button state update
+            this.updateDebugScrollButtons();
+        }
+    }
+
+    /**
+     * Update debug scroll button states
+     */
+    updateDebugScrollButtons() {
+        const debugConsole = document.getElementById('debug');
+        const scrollUpBtn = document.getElementById('debug-scroll-up');
+        const scrollDownBtn = document.getElementById('debug-scroll-down');
+
+        if (debugConsole && scrollUpBtn && scrollDownBtn) {
+            const isAtTop = debugConsole.scrollTop <= 0;
+            const isAtBottom = debugConsole.scrollTop >= (debugConsole.scrollHeight - debugConsole.clientHeight);
+
+            scrollUpBtn.disabled = isAtTop;
+            scrollDownBtn.disabled = isAtBottom;
+        }
     }
 
     /**
@@ -401,6 +456,7 @@ let videoPlayer;
 window.onload = function() {
     try {
         videoPlayer = new VideoPlayer();
+        window.videoPlayer = videoPlayer; // Make globally accessible for debug function
     } catch (error) {
         // console.error('Failed to initialize VideoPlayer:', error);
         document.body.innerHTML = `
