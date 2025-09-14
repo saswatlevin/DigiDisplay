@@ -111,12 +111,48 @@ class VideoPlayer {
         volumeSlider.addEventListener('input', (e) => this.setVolume(e.target.value));
 
         // Video player events
-        videoPlayer.addEventListener('loadstart', () => this.updatePlaybackStatus('Loading video...', 'info'));
-        videoPlayer.addEventListener('canplay', () => this.updatePlaybackStatus('Ready to play', 'success'));
-        videoPlayer.addEventListener('error', (e) => this.handleVideoError(e));
-        videoPlayer.addEventListener('ended', () => this.updatePlaybackStatus('Video ended', 'info'));
-        videoPlayer.addEventListener('playing', () => this.updatePlaybackStatus('Playing', 'success'));
-        videoPlayer.addEventListener('pause', () => this.updatePlaybackStatus('Paused', 'info'));
+        videoPlayer.addEventListener('loadstart', () => {
+            this.debug("Video loadstart event");
+            this.updatePlaybackStatus('Loading video...', 'info');
+        });
+        videoPlayer.addEventListener('loadedmetadata', () => {
+            this.debug("Video loadedmetadata event");
+            this.debug("Video duration: " + videoPlayer.duration + " seconds");
+        });
+        videoPlayer.addEventListener('loadeddata', () => {
+            this.debug("Video loadeddata event");
+        });
+        videoPlayer.addEventListener('canplay', () => {
+            this.debug("Video canplay event - ready to play");
+            this.updatePlaybackStatus('Ready to play', 'success');
+        });
+        videoPlayer.addEventListener('canplaythrough', () => {
+            this.debug("Video canplaythrough event - can play without buffering");
+        });
+        videoPlayer.addEventListener('error', (e) => {
+            this.debug("Video error event: " + JSON.stringify(e));
+            this.handleVideoError(e);
+        });
+        videoPlayer.addEventListener('ended', () => {
+            this.debug("Video ended event");
+            this.updatePlaybackStatus('Video ended', 'info');
+        });
+        videoPlayer.addEventListener('playing', () => {
+            this.debug("Video playing event");
+            this.updatePlaybackStatus('Playing', 'success');
+        });
+        videoPlayer.addEventListener('pause', () => {
+            this.debug("Video pause event");
+            this.updatePlaybackStatus('Paused', 'info');
+        });
+        videoPlayer.addEventListener('waiting', () => {
+            this.debug("Video waiting event - buffering");
+            this.updatePlaybackStatus('Buffering...', 'info');
+        });
+        videoPlayer.addEventListener('stalled', () => {
+            this.debug("Video stalled event - network issue");
+            this.updatePlaybackStatus('Network issue - stalled', 'warning');
+        });
 
         // Debug console scroll buttons
         this.setupDebugScrollButtons();
@@ -257,11 +293,40 @@ class VideoPlayer {
             const videoPlayer = document.getElementById('video-player');
             const videoSource = document.getElementById('video-source');
             
-            // Set the video source
+            // Clear any existing source first
+            videoSource.src = '';
+            videoPlayer.load();
+            
+            // Set the new video source
             videoSource.src = url;
             this.debug("loadVideo - video source set to URL " + url);
             
-            videoPlayer.load();
+            // Wait for the video to be ready to load
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('Video loading timeout'));
+                }, 10000); // 10 second timeout
+                
+                const onCanPlay = () => {
+                    clearTimeout(timeout);
+                    videoPlayer.removeEventListener('canplay', onCanPlay);
+                    videoPlayer.removeEventListener('error', onError);
+                    resolve();
+                };
+                
+                const onError = (e) => {
+                    clearTimeout(timeout);
+                    videoPlayer.removeEventListener('canplay', onCanPlay);
+                    videoPlayer.removeEventListener('error', onError);
+                    reject(new Error(`Video load error: ${e.target.error ? e.target.error.message : 'Unknown error'}`));
+                };
+                
+                videoPlayer.addEventListener('canplay', onCanPlay);
+                videoPlayer.addEventListener('error', onError);
+                
+                // Trigger the load
+                videoPlayer.load();
+            });
             
             this.currentVideo = url;
             this.updateAppStatus('Video loaded successfully');
@@ -314,16 +379,38 @@ class VideoPlayer {
             console.log("playVideo true - Video source available");
             this.debug("playVideo - Video source available. Source: " + (videoSource.src || this.currentVideo));
             
-            videoPlayer.play().then(() => {
-                console.log("playVideo - playing video");
-                this.debug("playVideo - Playing video successfully. Source: " + (videoSource.src || this.currentVideo));
-                this.updatePlaybackStatus('Playing', 'success');
-            }).catch(error => {
-                console.log("playVideo - error");
-                this.debug("playVideo - Video playing failed. Error: " + error.message);
-                this.updatePlaybackStatus(`Play failed: ${error.message}`, 'error');
-                this.showNotification(`Playback error: ${error.message}`, 'error');
-            });
+            // Check if video is ready to play
+            if (videoPlayer.readyState >= 3) { // HAVE_FUTURE_DATA or higher
+                this.debug("playVideo - Video ready state: " + videoPlayer.readyState);
+                
+                // For Tizen 7, we need to handle autoplay policy
+                const playPromise = videoPlayer.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log("playVideo - playing video");
+                        this.debug("playVideo - Playing video successfully. Source: " + (videoSource.src || this.currentVideo));
+                        this.updatePlaybackStatus('Playing', 'success');
+                    }).catch(error => {
+                        console.log("playVideo - error");
+                        this.debug("playVideo - Video playing failed. Error: " + error.message);
+                        
+                        // Handle specific autoplay policy errors
+                        if (error.name === 'NotAllowedError') {
+                            this.debug("playVideo - Autoplay blocked, trying to play after user interaction");
+                            this.showNotification('Please click Play again - autoplay was blocked', 'warning');
+                            this.updatePlaybackStatus('Autoplay blocked - click Play again', 'warning');
+                        } else {
+                            this.updatePlaybackStatus(`Play failed: ${error.message}`, 'error');
+                            this.showNotification(`Playback error: ${error.message}`, 'error');
+                        }
+                    });
+                }
+            } else {
+                this.debug("playVideo - Video not ready. Ready state: " + videoPlayer.readyState);
+                this.showNotification('Video is still loading, please wait...', 'warning');
+                this.updatePlaybackStatus('Video loading...', 'info');
+            }
         } else {
             console.log("playVideo false - No video loaded");
             this.debug("playVideo - No video loaded. Please load a video first.");
@@ -361,22 +448,42 @@ class VideoPlayer {
     handleVideoError(event) {
         const video = event.target;
         let errorMessage = 'Unknown video error';
+        let errorCode = 'UNKNOWN';
+        
+        this.debug("handleVideoError called");
+        this.debug("Video error object: " + JSON.stringify(video.error));
         
         if (video.error) {
             switch (video.error.code) {
                 case video.error.MEDIA_ERR_ABORTED:
                     errorMessage = 'Video playback was aborted';
+                    errorCode = 'MEDIA_ERR_ABORTED';
                     break;
                 case video.error.MEDIA_ERR_NETWORK:
-                    errorMessage = 'Network error occurred';
+                    errorMessage = 'Network error occurred - check internet connection';
+                    errorCode = 'MEDIA_ERR_NETWORK';
                     break;
                 case video.error.MEDIA_ERR_DECODE:
                     errorMessage = 'Video format not supported or corrupted';
+                    errorCode = 'MEDIA_ERR_DECODE';
                     break;
                 case video.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                    errorMessage = 'Video source not supported';
+                    errorMessage = 'Video source not supported - check URL and format';
+                    errorCode = 'MEDIA_ERR_SRC_NOT_SUPPORTED';
                     break;
+                default:
+                    errorMessage = `Unknown video error (code: ${video.error.code})`;
+                    errorCode = `UNKNOWN_${video.error.code}`;
             }
+            
+            this.debug("Video error details:");
+            this.debug("- Code: " + errorCode);
+            this.debug("- Message: " + errorMessage);
+            this.debug("- Network state: " + video.networkState);
+            this.debug("- Ready state: " + video.readyState);
+            this.debug("- Current source: " + (video.src || 'none'));
+        } else {
+            this.debug("Video error object is null/undefined");
         }
         
         this.updatePlaybackStatus(errorMessage, 'error');
