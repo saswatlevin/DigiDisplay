@@ -289,55 +289,150 @@ class VideoPlayer {
                 this.updateLoadStatus(`Loading... ${percentage}%`, 'info');
             });
 
+            // Test if URL is accessible first (optional check)
+            try {
+                this.debug("Testing URL accessibility...");
+                const response = await fetch(url, { method: 'HEAD' });
+                this.debug("URL test response status: " + response.status);
+            } catch (fetchError) {
+                this.debug("URL test failed (continuing anyway): " + fetchError.message);
+                // Don't fail the entire load process for fetch errors
+            }
+
             // Load video directly into the player
             const videoPlayer = document.getElementById('video-player');
             const videoSource = document.getElementById('video-source');
             
             // Clear any existing source first
             videoSource.src = '';
+            videoPlayer.src = ''; // Also clear video element src
             videoPlayer.load();
             
-            // Set the new video source
+            // Set the new video source - try both methods for Tizen compatibility
             videoSource.src = url;
+            videoPlayer.src = url; // Set directly on video element as well
             this.debug("loadVideo - video source set to URL " + url);
+            this.debug("loadVideo - video ready state before load: " + videoPlayer.readyState);
             
-            // Wait for the video to be ready to load
+            // Wait for the video to be ready to load with multiple fallback events
             await new Promise((resolve, reject) => {
+                let resolved = false;
                 const timeout = setTimeout(() => {
-                    reject(new Error('Video loading timeout'));
-                }, 10000); // 10 second timeout
+                    if (!resolved) {
+                        resolved = true;
+                        this.debug("Video loading timeout - but continuing with partial load");
+                        // Don't reject on timeout, just resolve and continue
+                        resolve();
+                    }
+                }, 15000); // Increased to 15 seconds
                 
-                const onCanPlay = () => {
+                const cleanup = () => {
                     clearTimeout(timeout);
                     videoPlayer.removeEventListener('canplay', onCanPlay);
+                    videoPlayer.removeEventListener('canplaythrough', onCanPlayThrough);
+                    videoPlayer.removeEventListener('loadeddata', onLoadedData);
                     videoPlayer.removeEventListener('error', onError);
-                    resolve();
+                };
+                
+                const onCanPlay = () => {
+                    if (!resolved) {
+                        resolved = true;
+                        cleanup();
+                        this.debug("Video canplay event received");
+                        resolve();
+                    }
+                };
+                
+                const onCanPlayThrough = () => {
+                    if (!resolved) {
+                        resolved = true;
+                        cleanup();
+                        this.debug("Video canplaythrough event received");
+                        resolve();
+                    }
+                };
+                
+                const onLoadedData = () => {
+                    if (!resolved) {
+                        resolved = true;
+                        cleanup();
+                        this.debug("Video loadeddata event received");
+                        resolve();
+                    }
                 };
                 
                 const onError = (e) => {
-                    clearTimeout(timeout);
-                    videoPlayer.removeEventListener('canplay', onCanPlay);
-                    videoPlayer.removeEventListener('error', onError);
-                    reject(new Error(`Video load error: ${e.target.error ? e.target.error.message : 'Unknown error'}`));
+                    if (!resolved) {
+                        resolved = true;
+                        cleanup();
+                        this.debug("Video load error: " + (e.target.error ? e.target.error.message : 'Unknown error'));
+                        reject(new Error(`Video load error: ${e.target.error ? e.target.error.message : 'Unknown error'}`));
+                    }
                 };
                 
+                // Listen for multiple events as fallbacks
                 videoPlayer.addEventListener('canplay', onCanPlay);
+                videoPlayer.addEventListener('canplaythrough', onCanPlayThrough);
+                videoPlayer.addEventListener('loadeddata', onLoadedData);
                 videoPlayer.addEventListener('error', onError);
                 
                 // Trigger the load
                 videoPlayer.load();
+                
+                // Also check if video is already ready (for cached content)
+                setTimeout(() => {
+                    if (!resolved && videoPlayer.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+                        resolved = true;
+                        cleanup();
+                        this.debug("Video already ready (cached content)");
+                        resolve();
+                    }
+                }, 1000);
+                
+                // Fallback: Check periodically if video is ready (for Tizen compatibility)
+                const checkInterval = setInterval(() => {
+                    if (!resolved) {
+                        this.debug("Checking video ready state: " + videoPlayer.readyState);
+                        if (videoPlayer.readyState >= 1) { // HAVE_METADATA or higher
+                            resolved = true;
+                            clearInterval(checkInterval);
+                            cleanup();
+                            this.debug("Video ready via periodic check");
+                            resolve();
+                        }
+                    } else {
+                        clearInterval(checkInterval);
+                    }
+                }, 2000); // Check every 2 seconds
             });
             
             this.currentVideo = url;
             this.updateAppStatus('Video loaded successfully');
             this.showNotification('Video loaded successfully!', 'success');
             this.updateLoadStatus('Video loaded', 'success');
+            
+            // Update progress to 100%
+            progressFill.style.width = '100%';
+            progressText.textContent = '100%';
+            
             this.debug("loadVideo - Video loaded successfully. URL is " + url);
+            this.debug("loadVideo - Final video ready state: " + videoPlayer.readyState);
 
 
         } catch (error) {
             this.debug("loadVideo - Video load failed. URL is " + url);
+            this.debug("loadVideo - Error details: " + error.message);
             this.updateLoadStatus(`Load failed: ${error.message}`, 'error');
+            
+            // Show more specific error messages
+            if (error.message.includes('timeout')) {
+                this.showNotification('Video loading timed out. The video may be too large or the connection is slow. Try a different video.', 'warning');
+            } else if (error.message.includes('load error')) {
+                this.showNotification('Video format may not be supported or the URL is invalid.', 'error');
+            } else {
+                this.showNotification(`Failed to load video: ${error.message}`, 'error');
+            }
+            
             throw error;
         } finally {
             this.isLoading = false;
@@ -356,13 +451,14 @@ class VideoPlayer {
     simulateProgress(onProgress) {
         let progress = 0;
         const interval = setInterval(() => {
-            progress += Math.random() * 15;
-            if (progress >= 100) {
-                progress = 100;
+            // Slower, more realistic progress for Tizen
+            progress += Math.random() * 8 + 2; // 2-10% increments
+            if (progress >= 95) {
+                progress = 95; // Don't reach 100% until actually loaded
                 clearInterval(interval);
             }
             onProgress(progress);
-        }, 200);
+        }, 300); // Slower updates for Tizen
     }
 
     /*

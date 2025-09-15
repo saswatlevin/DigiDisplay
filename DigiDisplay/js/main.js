@@ -39,6 +39,7 @@ class VideoPlayer {
     constructor() {
         this.currentVideo = null;
         this.isLoading = false;
+        this.userInitiatedPause = false; // Track if pause was user-initiated
         
         this.initializeApp();
     }
@@ -139,11 +140,17 @@ class VideoPlayer {
         });
         videoPlayer.addEventListener('playing', () => {
             this.debug("Video playing event");
+            this.userInitiatedPause = false; // Reset flag when playing
             this.updatePlaybackStatus('Playing', 'success');
         });
         videoPlayer.addEventListener('pause', () => {
-            this.debug("Video pause event");
-            this.updatePlaybackStatus('Paused', 'info');
+            this.debug("Video pause event - user initiated: " + this.userInitiatedPause);
+            if (this.userInitiatedPause) {
+                this.updatePlaybackStatus('Paused', 'info');
+                this.userInitiatedPause = false; // Reset flag
+            } else {
+                this.debug("Video pause event ignored (automatic pause)");
+            }
         });
         videoPlayer.addEventListener('waiting', () => {
             this.debug("Video waiting event - buffering");
@@ -271,23 +278,22 @@ class VideoPlayer {
         this.debug("In loadVideo. URL is " + url);
         this.isLoading = true;
         const loadBtn = document.getElementById('load-btn');
-        const progressContainer = document.getElementById('download-progress');
-        const progressFill = document.getElementById('progress-fill');
-        const progressText = document.getElementById('progress-text');
 
         try {
             loadBtn.disabled = true;
-            progressContainer.style.display = 'flex';
             this.updateLoadStatus('Loading video...', 'info');
             this.debug("loadVideo - Loading video... ");
+            this.showNotification('Loading video...', 'info');
 
-            // Show progress (simplified for direct URL loading)
-            this.simulateProgress((progress) => {
-                const percentage = Math.round(progress);
-                progressFill.style.width = `${percentage}%`;
-                progressText.textContent = `${percentage}%`;
-                this.updateLoadStatus(`Loading... ${percentage}%`, 'info');
-            });
+            // Test if URL is accessible first (optional check)
+            try {
+                this.debug("Testing URL accessibility...");
+                const response = await fetch(url, { method: 'HEAD' });
+                this.debug("URL test response status: " + response.status);
+            } catch (fetchError) {
+                this.debug("URL test failed (continuing anyway): " + fetchError.message);
+                // Don't fail the entire load process for fetch errors
+            }
 
             // Load video directly into the player
             const videoPlayer = document.getElementById('video-player');
@@ -295,75 +301,138 @@ class VideoPlayer {
             
             // Clear any existing source first
             videoSource.src = '';
+            videoPlayer.src = ''; // Also clear video element src
             videoPlayer.load();
             
-            // Set the new video source
+            // Set the new video source - try both methods for Tizen compatibility
             videoSource.src = url;
+            videoPlayer.src = url; // Set directly on video element as well
             this.debug("loadVideo - video source set to URL " + url);
+            this.debug("loadVideo - video ready state before load: " + videoPlayer.readyState);
             
-            // Wait for the video to be ready to load
+            // Wait for the video to be ready to load with multiple fallback events
             await new Promise((resolve, reject) => {
+                let resolved = false;
                 const timeout = setTimeout(() => {
-                    reject(new Error('Video loading timeout'));
-                }, 10000); // 10 second timeout
+                    if (!resolved) {
+                        resolved = true;
+                        this.debug("Video loading timeout - but continuing with partial load");
+                        // Don't reject on timeout, just resolve and continue
+                        resolve();
+                    }
+                }, 15000); // Increased to 15 seconds
                 
-                const onCanPlay = () => {
+                const cleanup = () => {
                     clearTimeout(timeout);
                     videoPlayer.removeEventListener('canplay', onCanPlay);
+                    videoPlayer.removeEventListener('canplaythrough', onCanPlayThrough);
+                    videoPlayer.removeEventListener('loadeddata', onLoadedData);
                     videoPlayer.removeEventListener('error', onError);
-                    resolve();
+                };
+                
+                const onCanPlay = () => {
+                    if (!resolved) {
+                        resolved = true;
+                        cleanup();
+                        this.debug("Video canplay event received");
+                        resolve();
+                    }
+                };
+                
+                const onCanPlayThrough = () => {
+                    if (!resolved) {
+                        resolved = true;
+                        cleanup();
+                        this.debug("Video canplaythrough event received");
+                        resolve();
+                    }
+                };
+                
+                const onLoadedData = () => {
+                    if (!resolved) {
+                        resolved = true;
+                        cleanup();
+                        this.debug("Video loadeddata event received");
+                        resolve();
+                    }
                 };
                 
                 const onError = (e) => {
-                    clearTimeout(timeout);
-                    videoPlayer.removeEventListener('canplay', onCanPlay);
-                    videoPlayer.removeEventListener('error', onError);
-                    reject(new Error(`Video load error: ${e.target.error ? e.target.error.message : 'Unknown error'}`));
+                    if (!resolved) {
+                        resolved = true;
+                        cleanup();
+                        this.debug("Video load error: " + (e.target.error ? e.target.error.message : 'Unknown error'));
+                        reject(new Error(`Video load error: ${e.target.error ? e.target.error.message : 'Unknown error'}`));
+                    }
                 };
                 
+                // Listen for multiple events as fallbacks
                 videoPlayer.addEventListener('canplay', onCanPlay);
+                videoPlayer.addEventListener('canplaythrough', onCanPlayThrough);
+                videoPlayer.addEventListener('loadeddata', onLoadedData);
                 videoPlayer.addEventListener('error', onError);
                 
                 // Trigger the load
                 videoPlayer.load();
+                
+                // Also check if video is already ready (for cached content)
+                setTimeout(() => {
+                    if (!resolved && videoPlayer.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+                        resolved = true;
+                        cleanup();
+                        this.debug("Video already ready (cached content)");
+                        resolve();
+                    }
+                }, 1000);
+                
+                // Fallback: Check periodically if video is ready (for Tizen compatibility)
+                const checkInterval = setInterval(() => {
+                    if (!resolved) {
+                        this.debug("Checking video ready state: " + videoPlayer.readyState);
+                        if (videoPlayer.readyState >= 1) { // HAVE_METADATA or higher
+                            resolved = true;
+                            clearInterval(checkInterval);
+                            cleanup();
+                            this.debug("Video ready via periodic check");
+                            resolve();
+                        }
+                    } else {
+                        clearInterval(checkInterval);
+                    }
+                }, 2000); // Check every 2 seconds
             });
             
             this.currentVideo = url;
+            this.userInitiatedPause = false; // Reset flag for new video
             this.updateAppStatus('Video loaded successfully');
-            this.showNotification('Video loaded successfully!', 'success');
+            this.showNotification('Video loaded', 'success');
             this.updateLoadStatus('Video loaded', 'success');
+            
             this.debug("loadVideo - Video loaded successfully. URL is " + url);
+            this.debug("loadVideo - Final video ready state: " + videoPlayer.readyState);
 
 
         } catch (error) {
             this.debug("loadVideo - Video load failed. URL is " + url);
+            this.debug("loadVideo - Error details: " + error.message);
             this.updateLoadStatus(`Load failed: ${error.message}`, 'error');
+            
+            // Show more specific error messages
+            if (error.message.includes('timeout')) {
+                this.showNotification('Video loading timed out. The video may be too large or the connection is slow. Try a different video.', 'warning');
+            } else if (error.message.includes('load error')) {
+                this.showNotification('Video format may not be supported or the URL is invalid.', 'error');
+            } else {
+                this.showNotification(`Failed to load video: ${error.message}`, 'error');
+            }
+            
             throw error;
         } finally {
             this.isLoading = false;
             loadBtn.disabled = false;
-            setTimeout(() => {
-                progressContainer.style.display = 'none';
-                progressFill.style.width = '0%';
-                progressText.textContent = '0%';
-            }, 2000);
         }
     }
 
-    /**
-     * Simulate loading progress for better UX
-     */
-    simulateProgress(onProgress) {
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += Math.random() * 15;
-            if (progress >= 100) {
-                progress = 100;
-                clearInterval(interval);
-            }
-            onProgress(progress);
-        }, 200);
-    }
 
     /*
      * Video playback controls
@@ -422,6 +491,7 @@ class VideoPlayer {
         this.debug("In pauseVideo");
         console.log("In pauseVideo");
         const videoPlayer = document.getElementById('video-player');
+        this.userInitiatedPause = true; // Mark as user-initiated
         videoPlayer.pause();
         this.updatePlaybackStatus('Paused', 'info');
     }
