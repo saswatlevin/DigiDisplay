@@ -249,12 +249,12 @@ class VideoPlayer {
         }
 
         if (!this.isValidUrl(url)) {
-             this.debug("handleLoadVideo - Please enter a valid URL");
-            this.showNotification('Please enter a valid URL', 'error');
+             this.debug("handleLoadVideo - Please enter a valid URL ending with .mp4 or with no extension");
+            this.showNotification('Please enter a valid URL ending with .mp4 or with no extension', 'error');
             return;
         }
 
-        // Format validation removed to support streaming URLs and URLs without extensions
+        // Now validates that URLs end with .mp4 extension or have no extension
 
         if (this.isLoading) {
             this.showNotification('Video loading already in progress', 'warning');
@@ -575,13 +575,25 @@ class VideoPlayer {
         this.debug("In isValidUrl.");
         try {
             new URL(string);
-            return true;
+            // Check if URL ends with .mp4 extension OR has no file extension
+            const lowerString = string.toLowerCase();
+            const url = new URL(string);
+            const pathname = url.pathname;
+            
+            // Accept if ends with .mp4
+            if (lowerString.endsWith('.mp4')) {
+                return true;
+            }
+            
+            // Accept if pathname has no extension (no dot in the last segment)
+            const lastSegment = pathname.split('/').pop();
+            return !lastSegment.includes('.');
         } catch (_) {
             return false;
         }
     }
 
-    // Format validation removed to support all video URLs including streaming URLs
+    // Now validates that URLs end with .mp4 extension or have no extension
 
     /**
      * UI Helper functions
